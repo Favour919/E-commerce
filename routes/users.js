@@ -1,30 +1,35 @@
 const express = require('express');
-const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const router = express.Router();
 
-const users = []; 
-
-// Register a new user
+// Register route
 router.post('/register', async (req, res) => {
   const { username, password } = req.body;
-  const hashedPassword = await bcrypt.hash(password, 10);
-  const user = { id: users.length + 1, username, password: hashedPassword };
-  users.push(user);
-  res.status(201).send('User registered');
-});
 
-// Login a user
-router.post('/login', async (req, res) => {
-  const { username, password } = req.body;
-  const user = users.find(u => u.username === username);
-  if (!user) return res.status(400).send('Invalid credentials');
+  // Validate input
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Username and password are required' });
+  }
 
-  const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) return res.status(400).send('Invalid credentials');
+  try {
+    // Define salt rounds
+    const saltRounds = 10;
 
-  const token = jwt.sign({ id: user.id }, 'your_jwt_secret', { expiresIn: '1h' });
-  res.send({ token });
+    // Generate salt
+    const salt = await bcrypt.genSalt(saltRounds);
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Save user to database (pseudo code)
+    // await saveUserToDatabase({ username, password: hashedPassword });
+
+    res.status(201).json({ message: 'User registered successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 module.exports = router;
